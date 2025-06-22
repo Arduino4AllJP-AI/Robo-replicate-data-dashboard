@@ -69,7 +69,6 @@ def get_devices_with_timestamp():
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
-        # return mapping of device → ISO timestamp string
         return { r.device: r.last_seen.isoformat(sep=' ') for r in rows }
     except:
         return {}
@@ -105,8 +104,15 @@ def index():
         except Exception as e:
             msg = f"❌ Error launching bridge script: {e}"
 
-    # render inline template
-    return render_template_string("""<!DOCTYPE html>
+    # pre-read config file contents for credentials page
+    file_content = ""
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            file_content = f.read()
+    except:
+        pass
+
+    template = """<!DOCTYPE html>
 <html>
 <head>
     <title>🤖Tele_ROBO_Bridge</title>
@@ -158,7 +164,8 @@ def index():
     <h1>🤖Tele_ROBO_Bridge</h1>
     {% if msg %}<div class="notice">{{ msg }}</div>{% endif %}
     {% if page == 'credentials' %}
-        <h2>Config File</h2><pre>{{ open(CONFIG_FILE).read() if os.path.exists(CONFIG_FILE) else '' }}</pre>
+        <h2>Config File</h2>
+        <pre>{{ file_content }}</pre>
     {% elif page == 'edit' %}
         <h2>Edit Credentials</h2>
         <form method="post">
@@ -175,11 +182,12 @@ def index():
     {% endif %}
 </div>
 </body>
-</html>""",
-        config=config,
-        dark=dark,
-        page=page,
-    )
+</html>"""
+    return render_template_string(template,
+                                  config=config,
+                                  dark=dark,
+                                  page=page,
+                                  file_content=file_content)
 
 def open_browser():
     webbrowser.open("http://127.0.0.1:5050")
